@@ -1,0 +1,134 @@
+import numpy as np
+
+
+grid_size = 3
+gamma = 0.9
+
+actions = ['U', 'D', 'L', 'R']
+
+
+rewards = np.full((grid_size, grid_size), -1)
+rewards[2][2] = 10  
+terminal_state = (2, 2)
+V = np.zeros((grid_size, grid_size))
+def get_next_state(state, action):
+    i, j = state
+    
+    if action == 'U':
+        i = max(i - 1, 0)
+    elif action == 'D':
+        i = min(i + 1, grid_size - 1)
+    elif action == 'L':
+        j = max(j - 1, 0)
+    elif action == 'R':
+        j = min(j + 1, grid_size - 1)
+        
+    return (i, j)
+
+def value_iteration():
+    global V
+    theta = 0.001
+    
+    while True:
+        delta = 0
+        new_V = np.copy(V)
+        
+        for i in range(grid_size):
+            for j in range(grid_size):
+                
+                if (i, j) == terminal_state:
+                    continue
+                
+                values = []
+                for a in actions:
+                    ni, nj = get_next_state((i, j), a)
+                    values.append(rewards[ni][nj] + gamma * V[ni][nj])
+                
+                new_V[i][j] = max(values)
+                delta = max(delta, abs(new_V[i][j] - V[i][j]))
+        
+        V = new_V
+        
+        if delta < theta:
+            break
+    
+    print("\nValue Function (Value Iteration):")
+    print(V)
+
+
+def policy_iteration():
+    policy = np.random.choice(actions, size=(grid_size, grid_size))
+    V_pi = np.zeros((grid_size, grid_size))
+    
+    while True:
+       
+        while True:
+            delta = 0
+            for i in range(grid_size):
+                for j in range(grid_size):
+                    
+                    if (i, j) == terminal_state:
+                        continue
+                    
+                    a = policy[i][j]
+                    ni, nj = get_next_state((i, j), a)
+                    
+                    v = rewards[ni][nj] + gamma * V_pi[ni][nj]
+                    delta = max(delta, abs(v - V_pi[i][j]))
+                    V_pi[i][j] = v
+            
+            if delta < 0.001:
+                break
+        
+        # Policy Improvement
+        policy_stable = True
+        
+        for i in range(grid_size):
+            for j in range(grid_size):
+                
+                if (i, j) == terminal_state:
+                    continue
+                
+                old_action = policy[i][j]
+                
+                action_values = []
+                for a in actions:
+                    ni, nj = get_next_state((i, j), a)
+                    action_values.append(
+                        rewards[ni][nj] + gamma * V_pi[ni][nj]
+                    )
+                
+                best_action = actions[np.argmax(action_values)]
+                policy[i][j] = best_action
+                
+                if old_action != best_action:
+                    policy_stable = False
+        
+        if policy_stable:
+            break
+    
+    print("\nOptimal Policy (Policy Iteration):")
+    print(policy)
+    
+    print("\nValue Function (Policy Iteration):")
+    print(V_pi)
+
+value_iteration()
+policy_iteration()
+
+
+
+output:Value Function (Value Iteration):
+[[ 4.58  6.2   8.  ]
+ [ 6.2   8.   10.  ]
+ [ 8.   10.    0.  ]]
+
+Optimal Policy (Policy Iteration):
+[['D' 'D' 'D']
+ ['D' 'D' 'D']
+ ['R' 'R' 'U']]
+
+Value Function (Policy Iteration):
+[[ 4.58  6.2   8.  ]
+ [ 6.2   8.   10.  ]
+ [ 8.   10.    0.  ]]
