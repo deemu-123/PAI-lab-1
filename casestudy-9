@@ -1,0 +1,100 @@
+import numpy as np
+
+states = ["Idle", "Busy", "LowBattery"]
+actions = ["Pick", "Move", "Charge"]
+
+gamma = 0.9
+
+
+rewards = {
+    "Idle": 1,
+    "Busy": 5,
+    "LowBattery": -3
+}
+
+
+transition = {
+    "Idle": {
+        "Pick": {"Busy": 0.8, "LowBattery": 0.2},
+        "Move": {"Idle": 0.6, "Busy": 0.4},
+        "Charge": {"Idle": 1.0}
+    },
+    "Busy": {
+        "Pick": {"Busy": 0.7, "LowBattery": 0.3},
+        "Move": {"Idle": 0.5, "Busy": 0.5},
+        "Charge": {"Idle": 0.6, "LowBattery": 0.4}
+    },
+    "LowBattery": {
+        "Pick": {"LowBattery": 1.0},
+        "Move": {"LowBattery": 0.8, "Idle": 0.2},
+        "Charge": {"Idle": 1.0}
+    }
+}
+
+
+policy = {s: np.random.choice(actions) for s in states}
+V = {s: 0 for s in states}
+
+def policy_iteration():
+    while True:
+      
+        while True:
+            delta = 0
+            for s in states:
+                a = policy[s]
+                v = 0
+                
+                for s_next, prob in transition[s][a].items():
+                    v += prob * (rewards[s_next] + gamma * V[s_next])
+                
+                delta = max(delta, abs(v - V[s]))
+                V[s] = v
+            
+            if delta < 0.001:
+                break
+        
+        
+        stable = True
+        
+        for s in states:
+            old_action = policy[s]
+            best_action = None
+            best_value = float('-inf')
+            
+            for a in actions:
+                val = 0
+                for s_next, prob in transition[s][a].items():
+                    val += prob * (rewards[s_next] + gamma * V[s_next])
+                
+                if val > best_value:
+                    best_value = val
+                    best_action = a
+            
+            policy[s] = best_action
+            
+            if old_action != best_action:
+                stable = False
+        
+        if stable:
+            break
+    
+    print("\nOptimal Policy:")
+    for s in policy:
+        print(f"{s} -> {policy[s]}")
+    
+    print("\nState Values:")
+    for s in V:
+        print(f"{s}: {V[s]:.2f}")
+
+
+policy_iteration()
+
+o/p:Optimal Policy:
+Idle -> Pick
+Busy -> Move
+LowBattery -> Charge
+
+State Values:
+Idle: 30.16
+Busy: 30.13
+LowBattery: 28.14
