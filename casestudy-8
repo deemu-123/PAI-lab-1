@@ -1,0 +1,99 @@
+import numpy as np
+
+states = ["Low", "Medium", "High"]
+actions = ["Short", "Medium", "Long"]
+
+gamma = 0.9
+
+# Rewards (less congestion = higher reward)
+rewards = {
+    "Low": 5,
+    "Medium": 2,
+    "High": -5
+}
+
+# Transition Probabilities P(s' | s, a)
+transition = {
+    "Low": {
+        "Short": {"Low": 0.7, "Medium": 0.3},
+        "Medium": {"Low": 0.6, "Medium": 0.4},
+        "Long": {"Medium": 0.6, "High": 0.4}
+    },
+    "Medium": {
+        "Short": {"Low": 0.3, "Medium": 0.5, "High": 0.2},
+        "Medium": {"Low": 0.4, "Medium": 0.4, "High": 0.2},
+        "Long": {"Medium": 0.3, "High": 0.7}
+    },
+    "High": {
+        "Short": {"Medium": 0.6, "High": 0.4},
+        "Medium": {"Medium": 0.7, "High": 0.3},
+        "Long": {"Low": 0.5, "Medium": 0.5}
+    }
+}
+
+# Initialize value function
+V = {s: 0 for s in states}
+
+def value_iteration():
+    theta = 0.001
+    
+    while True:
+        delta = 0
+        new_V = V.copy()
+        
+        for s in states:
+            action_values = []
+            
+            for a in actions:
+                val = 0
+                for s_next, prob in transition[s][a].items():
+                    val += prob * (rewards[s_next] + gamma * V[s_next])
+                action_values.append(val)
+            
+            new_V[s] = max(action_values)
+            delta = max(delta, abs(new_V[s] - V[s]))
+        
+        V.update(new_V)
+        
+        if delta < theta:
+            break
+    
+    print("\nOptimal State Values:")
+    for s in states:
+        print(f"{s}: {V[s]:.2f}")
+    
+    # Extract policy
+    policy = {}
+    for s in states:
+        best_action = None
+        best_value = float('-inf')
+        
+        for a in actions:
+            val = 0
+            for s_next, prob in transition[s][a].items():
+                val += prob * (rewards[s_next] + gamma * V[s_next])
+            
+            if val > best_value:
+                best_value = val
+                best_action = a
+        
+        policy[s] = best_action
+    
+    print("\nOptimal Signal Timing Policy:")
+    for s in policy:
+        print(f"{s} Traffic -> {policy[s]} Duration")
+
+# Run
+value_iteration()
+
+o/p:Optimal State Values:
+Low: 33.58
+Medium: 30.84
+High: 32.49
+
+Optimal Signal Timing Policy:
+Low Traffic -> Short Duration
+Medium Traffic -> Medium Duration
+High Traffic -> Long Duration
+
+
